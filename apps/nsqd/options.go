@@ -125,6 +125,7 @@ func nsqdFlagSet(opts *nsqd.Options) *flag.FlagSet {
 	flagSet.Int64("max-bytes-per-file", opts.MaxBytesPerFile, "number of bytes per diskqueue file before rolling")
 	flagSet.Int64("sync-every", opts.SyncEvery, "number of messages per diskqueue fsync")
 	flagSet.Duration("sync-timeout", opts.SyncTimeout, "duration of time per diskqueue fsync")
+	flagSet.Int("min-compress-size", opts.MinCompressSize, "enable compress when msg size over")
 
 	// msg and command options
 	flagSet.Duration("msg-timeout", opts.MsgTimeout, "default duration to wait before auto-requeing a message")

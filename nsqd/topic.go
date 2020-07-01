@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nsqio/go-diskqueue"
+	"github.com/nsqio/nsq/internal/diskqueue"
 	"github.com/nsqio/nsq/internal/lg"
 	"github.com/nsqio/nsq/internal/quantile"
 	"github.com/nsqio/nsq/internal/util"
@@ -75,6 +75,7 @@ func NewTopic(topicName string, ctx *context, deleteCallback func(*Topic)) *Topi
 			ctx.nsqd.getOpts().SyncEvery,
 			ctx.nsqd.getOpts().SyncTimeout,
 			dqLogf,
+			int32(ctx.nsqd.getOpts().MinCompressSize),
 		)
 	}
 
@@ -244,7 +245,7 @@ func (t *Topic) messagePump() {
 	var err error
 	var chans []*Channel
 	var memoryMsgChan chan *Message
-	var backendChan chan []byte
+	var backendChan <-chan []byte
 
 	// do not pass messages before Start(), but avoid blocking Pause() or GetChannel()
 	for {

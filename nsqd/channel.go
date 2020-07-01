@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nsqio/go-diskqueue"
+	"github.com/nsqio/nsq/internal/diskqueue"
 	"github.com/nsqio/nsq/internal/lg"
 	"github.com/nsqio/nsq/internal/pqueue"
 	"github.com/nsqio/nsq/internal/quantile"
@@ -110,6 +110,7 @@ func NewChannel(topicName string, channelName string, ctx *context,
 			ctx.nsqd.getOpts().SyncEvery,
 			ctx.nsqd.getOpts().SyncTimeout,
 			dqLogf,
+			int32(ctx.nsqd.getOpts().MinCompressSize),
 		)
 	}
 
