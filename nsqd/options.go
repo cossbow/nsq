@@ -34,6 +34,7 @@ type Options struct {
 	MaxBytesPerFile int64         `flag:"max-bytes-per-file"`
 	SyncEvery       int64         `flag:"sync-every"`
 	SyncTimeout     time.Duration `flag:"sync-timeout"`
+	MinCompressSize int           `flag:"min-compress-size"`
 
 	QueueScanInterval        time.Duration
 	QueueScanRefreshInterval time.Duration
