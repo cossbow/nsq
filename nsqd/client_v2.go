@@ -38,6 +38,8 @@ type identifyDataV2 struct {
 	SampleRate          int32  `json:"sample_rate"`
 	UserAgent           string `json:"user_agent"`
 	MsgTimeout          int    `json:"msg_timeout"`
+
+	Compress CompressType `json:"compress"`
 }
 
 type identifyEvent struct {
@@ -100,6 +102,8 @@ type clientV2 struct {
 	Snappy  int32
 	Deflate int32
 
+	Compress CompressType
+
 	// re-usable buffer for reading the 4-byte lengths off the wire
 	lenBuf   [4]byte
 	lenSlice []byte
@@ -161,6 +165,7 @@ func (c *clientV2) Identify(data identifyDataV2) error {
 	c.ClientID = data.ClientID
 	c.Hostname = data.Hostname
 	c.UserAgent = data.UserAgent
+	c.Compress = data.Compress
 	c.metaLock.Unlock()
 
 	err := c.SetHeartbeatInterval(data.HeartbeatInterval)
@@ -235,6 +240,7 @@ func (c *clientV2) Stats() ClientStats {
 		TLS:             atomic.LoadInt32(&c.TLS) == 1,
 		Deflate:         atomic.LoadInt32(&c.Deflate) == 1,
 		Snappy:          atomic.LoadInt32(&c.Snappy) == 1,
+		Compress:        c.Compress,
 		Authed:          c.HasAuthorizations(),
 		AuthIdentity:    identity,
 		AuthIdentityURL: identityURL,

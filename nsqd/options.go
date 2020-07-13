@@ -78,9 +78,12 @@ type Options struct {
 	TLSMinVersion       uint16 `flag:"tls-min-version"`
 
 	// compression
-	DeflateEnabled  bool `flag:"deflate"`
-	MaxDeflateLevel int  `flag:"max-deflate-level"`
-	SnappyEnabled   bool `flag:"snappy"`
+	// Deprecated
+	DeflateEnabled bool `flag:"deflate"`
+	// Deprecated
+	MaxDeflateLevel int `flag:"max-deflate-level"`
+	// Deprecated
+	SnappyEnabled bool `flag:"snappy"`
 }
 
 func NewOptions() *Options {

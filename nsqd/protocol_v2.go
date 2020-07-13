@@ -19,6 +19,14 @@ import (
 
 const maxTimeout = time.Hour
 
+type CompressType byte
+
+const (
+	CompressNon CompressType = iota
+	CompressSnappy
+	CompressDeflate
+)
+
 const (
 	frameTypeResponse int32 = 0
 	frameTypeError    int32 = 1
@@ -799,7 +807,7 @@ func (p *protocolV2) PUB(client *clientV2, params [][]byte) ([]byte, error) {
 	}
 
 	topic := p.ctx.nsqd.GetTopic(topicName)
-	msg := NewMessage(topic.GenerateID(), messageBody)
+	msg := NewCompressedMessage(topic.GenerateID(), client.Compress, messageBody)
 	err = topic.PutMessage(msg)
 	if err != nil {
 		return nil, protocol.NewFatalClientErr(err, "E_PUB_FAILED", "PUB failed "+err.Error())
@@ -845,7 +853,7 @@ func (p *protocolV2) MPUB(client *clientV2, params [][]byte) ([]byte, error) {
 	}
 
 	messages, err := readMPUB(client.Reader, client.lenSlice, topic,
-		p.ctx.nsqd.getOpts().MaxMsgSize, p.ctx.nsqd.getOpts().MaxBodySize)
+		p.ctx.nsqd.getOpts().MaxMsgSize, p.ctx.nsqd.getOpts().MaxBodySize, client.Compress)
 	if err != nil {
 		return nil, err
 	}
@@ -915,7 +923,7 @@ func (p *protocolV2) DPUB(client *clientV2, params [][]byte) ([]byte, error) {
 	}
 
 	topic := p.ctx.nsqd.GetTopic(topicName)
-	msg := NewMessage(topic.GenerateID(), messageBody)
+	msg := NewCompressedMessage(topic.GenerateID(), client.Compress, messageBody)
 	msg.deferred = timeoutDuration
 	err = topic.PutMessage(msg)
 	if err != nil {
@@ -954,7 +962,7 @@ func (p *protocolV2) TOUCH(client *clientV2, params [][]byte) ([]byte, error) {
 	return nil, nil
 }
 
-func readMPUB(r io.Reader, tmp []byte, topic *Topic, maxMessageSize int64, maxBodySize int64) ([]*Message, error) {
+func readMPUB(r io.Reader, tmp []byte, topic *Topic, maxMessageSize int64, maxBodySize int64, compress CompressType) ([]*Message, error) {
 	numMessages, err := readLen(r, tmp)
 	if err != nil {
 		return nil, protocol.NewFatalClientErr(err, "E_BAD_BODY", "MPUB failed to read message count")
@@ -991,7 +999,7 @@ func readMPUB(r io.Reader, tmp []byte, topic *Topic, maxMessageSize int64, maxBo
 			return nil, protocol.NewFatalClientErr(err, "E_BAD_MESSAGE", "MPUB failed to read message body")
 		}
 
-		messages = append(messages, NewMessage(topic.GenerateID(), msgBody))
+		messages = append(messages, NewCompressedMessage(topic.GenerateID(), compress, msgBody))
 	}
 
 	return messages, nil

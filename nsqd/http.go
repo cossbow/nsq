@@ -142,6 +142,21 @@ func (s *httpServer) doInfo(w http.ResponseWriter, req *http.Request, ps httprou
 	}, nil
 }
 
+// parse CompressType: compression in client
+func (s *httpServer) parseCompressType(params url.Values) CompressType {
+	compress := CompressNon
+	_cv := params.Get("compress")
+	if "" != _cv {
+		cv, err := strconv.Atoi(_cv)
+		if nil != err {
+			s.ctx.nsqd.logf(LOG_ERROR, "invalid CompressType '%s'", _cv)
+		} else {
+			compress = CompressType(cv)
+		}
+	}
+	return compress
+}
+
 func (s *httpServer) getExistingTopicFromQuery(req *http.Request) (*http_api.ReqParams, *Topic, string, error) {
 	reqParams, err := http_api.NewReqParams(req)
 	if err != nil {
@@ -209,6 +224,8 @@ func (s *httpServer) doPUB(w http.ResponseWriter, req *http.Request, ps httprout
 		return nil, err
 	}
 
+	compress := s.parseCompressType(reqParams)
+
 	var deferred time.Duration
 	if ds, ok := reqParams["defer"]; ok {
 		var di int64
@@ -222,7 +239,7 @@ func (s *httpServer) doPUB(w http.ResponseWriter, req *http.Request, ps httprout
 		}
 	}
 
-	msg := NewMessage(topic.GenerateID(), body)
+	msg := NewCompressedMessage(topic.GenerateID(), compress, body)
 	msg.deferred = deferred
 	err = topic.PutMessage(msg)
 	if err != nil {
@@ -248,6 +265,8 @@ func (s *httpServer) doMPUB(w http.ResponseWriter, req *http.Request, ps httprou
 		return nil, err
 	}
 
+	compress := s.parseCompressType(reqParams)
+
 	// text mode is default, but unrecognized binary opt considered true
 	binaryMode := false
 	if vals, ok := reqParams["binary"]; ok {
@@ -259,7 +278,7 @@ func (s *httpServer) doMPUB(w http.ResponseWriter, req *http.Request, ps httprou
 	if binaryMode {
 		tmp := make([]byte, 4)
 		msgs, err = readMPUB(req.Body, tmp, topic,
-			s.ctx.nsqd.getOpts().MaxMsgSize, s.ctx.nsqd.getOpts().MaxBodySize)
+			s.ctx.nsqd.getOpts().MaxMsgSize, s.ctx.nsqd.getOpts().MaxBodySize, compress)
 		if err != nil {
 			return nil, http_api.Err{413, err.(*protocol.FatalClientErr).Code[2:]}
 		}
@@ -297,7 +316,7 @@ func (s *httpServer) doMPUB(w http.ResponseWriter, req *http.Request, ps httprou
 				return nil, http_api.Err{413, "MSG_TOO_BIG"}
 			}
 
-			msg := NewMessage(topic.GenerateID(), block)
+			msg := NewCompressedMessage(topic.GenerateID(), compress, block)
 			msgs = append(msgs, msg)
 		}
 	}

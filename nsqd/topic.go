@@ -314,7 +314,7 @@ func (t *Topic) messagePump() {
 			// fastpath to avoid copy if its the first channel
 			// (the topic already created the first copy)
 			if i > 0 {
-				chanMsg = NewMessage(msg.ID, msg.Body)
+				chanMsg = NewCompressedMessage(msg.ID, msg.Compress, msg.Body)
 				chanMsg.Timestamp = msg.Timestamp
 				chanMsg.deferred = msg.deferred
 			}
